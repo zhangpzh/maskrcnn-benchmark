@@ -28,16 +28,16 @@ class AttentionMixupWithFrozenRCNN(nn.Module):
     def __init__(self, cfg):
         super(AttentionMixupWithFrozenRCNN, self).__init__()
 
-		#NOTE(peizhen): build attention module...
-		self.attention_merger = build_attentionMixup_module(cfg)
+        #NOTE(peizhen): build attention module...
+        self.attention_merger = build_attentionMixup_module(cfg)
 
-		#TODO(peizhen): check. only want attention_merger to learn
-		with torch.no_grad():
+        #TODO(peizhen): check. only want attention_merger to learn
+        with torch.no_grad():
             self.backbone = build_backbone(cfg)
             self.rpn = build_rpn(cfg, self.backbone.out_channels)
             self.roi_heads = build_roi_heads(cfg, self.backbone.out_channels)
 
-	#NOTE(peizhen): extra feats tensor (8, feat_len, *, *)
+    #NOTE(peizhen): extra feats tensor (8, feat_len, *, *)
     def forward(self, images, feats, targets=None):
         """
         Arguments:
@@ -54,13 +54,13 @@ class AttentionMixupWithFrozenRCNN(nn.Module):
         if self.training and targets is None:
             raise ValueError("In training mode, targets should be passed")
 
-		#TODO(peizhen): Here outght to be 8 syntheized (stacked on the channel dimension) image tensors but not the original 16 image tensors
+        #TODO(peizhen): Here outght to be 8 syntheized (stacked on the channel dimension) image tensors but not the original 16 image tensors
         # and the "targes" should be 8 merged annotations tensors. @Pengcheng about this.
         images = to_image_list(images)
-		
-	    #images -> merged_images	
-		#NOTE(peizhen): attention mixup module. images (8 x 6 x H x W) -> attention module -> merged_images (8 x 3 x H x W)
-		merged_images = self.attention_merger(feats.tensors, images.tensors)
+        
+        #images -> merged_images    
+        #NOTE(peizhen): attention mixup module. images (8 x 6 x H x W) -> attention module -> merged_images (8 x 3 x H x W)
+        merged_images = self.attention_merger(feats.tensors, images.tensors)
         features = self.backbone(merged_images.tensors)
         proposals, proposal_losses = self.rpn(merged_images, features, targets)
         if self.roi_heads:
