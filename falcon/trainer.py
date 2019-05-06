@@ -76,6 +76,8 @@ def do_train(
     model.train()
     start_training_time = time.time()
     end = time.time()
+    #import ipdb
+    #ipdb.set_trace()
     for iteration, (images, targets, idx) in enumerate(data_loader, start_iter):
         images, targets, feats = _dataset(images, targets, idx, feature_dir)
         data_time = time.time() - end
@@ -86,10 +88,14 @@ def do_train(
 
         to_device_time = time.time()
         images = images.to(device)
+        ##TODO:
+        import ipdb
+        ipdb.set_trace()
+        feats = feats.to(device)
         targets = [target.to(device) for target in targets]
         to_device_time = time.time() - to_device_time
 
-        loss_dict = model(images, targets)
+        loss_dict = model(images, feats, targets)
 
         losses = sum(loss for loss in loss_dict.values())
 

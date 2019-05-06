@@ -60,7 +60,7 @@ class AttentionMixupWithFrozenRCNN(nn.Module):
         
         #images -> merged_images    
         #NOTE(peizhen): attention mixup module. images (8 x 6 x H x W) -> attention module -> merged_images (8 x 3 x H x W)
-        merged_images = self.attention_merger(feats.tensors, images.tensors)
+        merged_images = self.attention_merger(feats, images.tensors)
         features = self.backbone(merged_images.tensors)
         proposals, proposal_losses = self.rpn(merged_images, features, targets)
         if self.roi_heads:

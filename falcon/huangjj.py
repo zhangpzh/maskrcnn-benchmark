@@ -5,9 +5,9 @@ import os
 
 import torch
 from maskrcnn_benchmark.utils.model_serialization import load_state_dict
+from maskrcnn_benchmark.utils.c2_model_loading import load_c2_format
 
-
-def get_checkpoint_file(path):
+def get_model_file(path):
     save_file = path
     try:
         with open(save_file, "r") as f:
@@ -37,8 +37,11 @@ def load_pretrain_detector(cfg, model):
     path_to_model = cfg.PRETRAIN_DET_DIR
     save_file = os.path.join(path_to_model, "last_checkpoint")
 
+    #import ipdb
+    #ipdb.set_trace()
+    
     if os.path.exists(save_file):
-        f = get_model_file(path_to_model)
+        f = get_model_file(save_file)
     if not f:
         logger.info("No pretrained detecotr found.")
         exit(0)

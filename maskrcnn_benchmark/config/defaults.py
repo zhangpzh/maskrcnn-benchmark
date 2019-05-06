@@ -448,6 +448,8 @@ _C.AMP_VERBOSE = False
 # ---------------------------------------------------------------------------- #
 # falcon
 # ---------------------------------------------------------------------------- #
-_C.PRETRAIN_DET_DIR = ""
-
 _C.FEATURE_DIR = ""
+_C.MODEL.ATTENTION = CN()
+_C.MODEL.ATTENTION.IN_CHANNELS = 2048
+_C.PRETRAIN_DET_DIR = ''
+

@@ -24,6 +24,8 @@ from maskrcnn_benchmark.utils.comm import synchronize, get_rank
 from maskrcnn_benchmark.utils.imports import import_file
 from maskrcnn_benchmark.utils.logger import setup_logger
 from maskrcnn_benchmark.utils.miscellaneous import mkdir
+from huangjj import load_pretrain_detector 
+
 
 # See if we can use apex.DistributedDataParallel instead of the torch default,
 # and enable mixed-precision via apex.amp
@@ -35,6 +37,7 @@ except ImportError:
 
 def train(cfg, local_rank, distributed):
     model = build_detection_model(cfg)
+    model = load_pretrain_detector(cfg, model)
     device = torch.device(cfg.MODEL.DEVICE)
     model.to(device)
 
@@ -62,8 +65,9 @@ def train(cfg, local_rank, distributed):
     checkpointer = DetectronCheckpointer(
         cfg, model, optimizer, scheduler, output_dir, save_to_disk
     )
-    extra_checkpoint_data = checkpointer.load(cfg.MODEL.WEIGHT)
-    arguments.update(extra_checkpoint_data)
+    #TODO: uncomment later...
+    #extra_checkpoint_data = checkpointer.load(cfg.MODEL.WEIGHT)
+    #arguments.update(extra_checkpoint_data)
 
     data_loader = make_data_loader(
         cfg,

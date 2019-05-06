@@ -36,7 +36,8 @@ def get_feature_map(image_ids, feature_dir=""):
     if len(image_ids) == 1:
         return torch.from_numpy(res)
 
-    for _, _id in enumerate(image_ids, 1):
+    #for _, _id in enumerate(image_ids, 1):
+    for _id in image_ids[1:]:
         res = np.concatenate(
             (res, np.load(os.path.join(feature_dir, str(_id) + ".npy"))[np.newaxis, :]))
     return torch.from_numpy(res)
