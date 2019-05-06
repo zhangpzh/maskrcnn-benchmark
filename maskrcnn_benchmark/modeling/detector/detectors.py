@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 from .generalized_rcnn import GeneralizedRCNN
 #NOTE(peizhen)
-from .attention_mixup_with_frozeRCNN import AttentionMixupWithFrozenRCNN 
+from .attention_mixup_with_frozenRCNN import AttentionMixupWithFrozenRCNN
 
 
 #_DETECTION_META_ARCHITECTURES = {"GeneralizedRCNN": GeneralizedRCNN}

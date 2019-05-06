@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import torchvision
 from torch.nn import functional as F
+from tqdm import tqdm
 
 from maskrcnn_benchmark.config import cfg
 from maskrcnn_benchmark.data import make_data_loader
@@ -81,10 +82,6 @@ def main():
     cfg.merge_from_list(args.opts)
     cfg.freeze()
 
-    output_dir = cfg.OUTPUT_DIR
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
-
     save_dir = ""
     logger = setup_logger("falcon.coco_feature_map", save_dir, get_rank())
     logger.info("Using {} GPUs".format(num_gpus))
@@ -93,15 +90,19 @@ def main():
     logger.info("Collecting env info (might take some time)")
     logger.info("\n" + collect_env_info())
 
-    # Initialize mixed-precision if necessary
-    use_mixed_precision = cfg.DTYPE == 'float16'
-    amp_handle = amp.init(enabled=use_mixed_precision, verbose=cfg.AMP_VERBOSE)
-
     model = ResNet50FeatureMap()
     device = torch.device(cfg.MODEL.DEVICE)
     cpu_device = torch.device("cpu")
     model = model.to(device)
     logger.info(model)
+
+    output_dir = cfg.OUTPUT_DIR
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+
+    # Initialize mixed-precision if necessary
+    use_mixed_precision = cfg.DTYPE == 'float16'
+    amp_handle = amp.init(enabled=use_mixed_precision, verbose=cfg.AMP_VERBOSE)
 
     data_loaders = make_data_loader(
         cfg,
@@ -109,14 +110,15 @@ def main():
         is_distributed=args.distributed
     )
 
+    model.eval()
     for data_loader in data_loaders:
-        for iteration, (images, targets, idx) in enumerate(data_loader):
+        for iteration, (images, targets, idx) in enumerate(tqdm(data_loader)):
             images = images.to(device)
             with torch.no_grad():
                 output = model(images.tensors)
                 output = F.interpolate(output, size=args.feature_map_size,
                                        mode='bilinear', align_corners=True)
-
+                torch.cuda.synchronize()
                 feats = [item.to(cpu_device) for item in output]
             logger.info("=== idx: {}".format(idx))
             for _id, feat in zip(idx, feats):
