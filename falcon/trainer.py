@@ -42,31 +42,28 @@ def reduce_loss_dict(loss_dict):
 
 
 def _dataset(images, targets, idx, feature_dir):
-    # 16x2
-    img_sizes = np.array([list(item) for item in images.image_sizes])
-    # 1x2
-    dst_img_size = img_sizes.max(axis=0)
-    # 16x2
-    dst_ratios = dst_img_size / img_sizes
-    # 16x4
-    bbox_ratios = torch.from_numpy(np.stack((dst_ratios, dst_ratios), axis=1).reshape(
-        len(images.image_sizes), -1).astype(np.float32))
-    _images = F.interpolate(images.tensors, size=dst_img_size.tolist(), mode='bilinear', align_corners=False)
-    # reshape: [N, 3, W, H] to [N*3, W, H]
-    _shape = _images.shape
-    _images = torch.reshape(_images, [int(_shape[0] / 2), int(_shape[1]*2), _shape[2], _shape[3]])
-    _images = ImageList(_images, [dst_img_size.tolist()]*int(_shape[0] / 2))
+    # reshape images: [N, 3, H, W] to [N/2, 3*2, H, W]
+    _shape = images.tensors.shape
+    _images = torch.reshape(images.tensors, [int(_shape[0] / 2), int(_shape[1] * 2), _shape[2], _shape[3]])
 
+    # new image size
+    image_size = np.array(images.image_sizes)
+    _image_size = []
+    for i in range(int(image_size.shape[0] / 2)):
+        _image_size.append(image_size[i * 2: i * 2 + 2].max(axis=0).tolist())
+
+    _images = ImageList(_images, _image_size)
+
+    # concat 2 targets to 1 target align to _images
     for i, target in enumerate(targets):
-        target.bbox = target.bbox * bbox_ratios[i]
-        target.size = tuple(dst_img_size.tolist())
         if 'masks' in target.extra_fields.keys():
             del target.extra_fields['masks']
         if 'keypoints' in target.extra_fields.keys():
             del target.extra_fields['keypoints']
     _targets = []
     for i in range(int(_shape[0] / 2)):
-        _targets.append(cat_boxlist([targets[i*2], targets[i*2+1]]))
+        targets[i * 2].size = targets[i * 2 + 1].size = list(reversed(_image_size[i]))
+        _targets.append(cat_boxlist([targets[i * 2], targets[i * 2 + 1]]))
 
     feats = get_feature_map(idx, feature_dir=feature_dir)
     _shape = feats.shape
