@@ -105,6 +105,8 @@ def do_train(
         images = images.to(device)
         ##TODO:
         feats = feats.to(device)
+        #import ipdb
+        #ipdb.set_trace()
         targets = [target.to(device) for target in targets]
         to_device_time = time.time() - to_device_time
 

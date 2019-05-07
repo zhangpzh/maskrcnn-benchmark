@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from maskrcnn_benchmark.structures.image_list import ImageList
 
 
 class attentionMixupModule(nn.Module):
@@ -17,8 +18,8 @@ class attentionMixupModule(nn.Module):
         )
 
     # stk_feat_map: (8,4096,*,*)
-    # stk_orig_img: (8,6,H,W)
-    # return merged_img: (8,3,H,W)
+    # stk_orig_img.tensors: (8,6,H,W)
+    # return merged_img whose tensors is of shape (8,3,H,W)
     def forward(self, stk_feat_map, stk_orig_img):
         x = self.pred_mixup(stk_feat_map)
         # (8,2,1,1) -> (8,2x3,1,1)
@@ -27,13 +28,13 @@ class attentionMixupModule(nn.Module):
         # 与 8x6xHxW的原图broadcast乘法
         # (8,6,H,W)
 
-        import ipdb
-        ipdb.set_trace()
+        #import ipdb
+        #ipdb.set_trace()
 
-        mixup_img = x * stk_orig_img
+        mixup_img = x * stk_orig_img.tensors
         # 将8x6xHxW的上三层与下三层相加得到8x3xHxW返回
         weighted_img1, weighted_img2 = torch.split(mixup_img, [3, 3], dim=1)
-        merged_img = weighted_img2 + weighted_img2
+        merged_img = ImageList(weighted_img1 + weighted_img2, stk_orig_img.image_sizes)
         return merged_img
 
 

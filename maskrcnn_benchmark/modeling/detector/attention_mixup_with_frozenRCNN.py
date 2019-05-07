@@ -36,6 +36,10 @@ class AttentionMixupWithFrozenRCNN(nn.Module):
             self.backbone = build_backbone(cfg)
             self.rpn = build_rpn(cfg, self.backbone.out_channels)
             self.roi_heads = build_roi_heads(cfg, self.backbone.out_channels)
+            # manually set no learn
+            self.backbone.requires_grad = False
+            self.rpn.requires_grad = False
+            self.roi_heads.requires_grad = False
 
     #NOTE(peizhen): extra feats tensor (8, feat_len, *, *)
     def forward(self, images, feats, targets=None):
@@ -54,14 +58,16 @@ class AttentionMixupWithFrozenRCNN(nn.Module):
         if self.training and targets is None:
             raise ValueError("In training mode, targets should be passed")
 
-        #TODO(peizhen): Here outght to be 8 syntheized (stacked on the channel dimension) image tensors but not the original 16 image tensors
+        #NOTE(peizhen): Here outght to be 8 syntheized (stacked on the channel dimension) image tensors but not the original 16 image tensors
         # and the "targes" should be 8 merged annotations tensors. @Pengcheng about this.
         images = to_image_list(images)
         
         #images -> merged_images    
         #NOTE(peizhen): attention mixup module. images (8 x 6 x H x W) -> attention module -> merged_images (8 x 3 x H x W)
-        merged_images = self.attention_merger(feats, images.tensors)
+        merged_images = self.attention_merger(feats, images)
         features = self.backbone(merged_images.tensors)
+        #import ipdb
+        #ipdb.set_trace()
         proposals, proposal_losses = self.rpn(merged_images, features, targets)
         if self.roi_heads:
             x, result, detector_losses = self.roi_heads(features, proposals, targets)

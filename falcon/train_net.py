@@ -42,6 +42,8 @@ def train(cfg, local_rank, distributed):
     model.to(device)
 
     optimizer = make_optimizer(cfg, model)
+    #import ipdb
+    #ipdb.set_trace()
     scheduler = make_lr_scheduler(cfg, optimizer)
 
     # Initialize mixed-precision training
