@@ -24,7 +24,7 @@ from maskrcnn_benchmark.utils.comm import synchronize, get_rank
 from maskrcnn_benchmark.utils.imports import import_file
 from maskrcnn_benchmark.utils.logger import setup_logger
 from maskrcnn_benchmark.utils.miscellaneous import mkdir
-from huangjj import load_pretrain_detector 
+from huangjj import load_pretrain_detector
 
 
 # See if we can use apex.DistributedDataParallel instead of the torch default,

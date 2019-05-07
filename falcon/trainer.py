@@ -11,6 +11,8 @@ import numpy as np
 
 from maskrcnn_benchmark.utils.comm import get_world_size
 from maskrcnn_benchmark.utils.metric_logger import MetricLogger
+from maskrcnn_benchmark.structures.boxlist_ops import cat_boxlist
+from maskrcnn_benchmark.structures.image_list import ImageList
 from coco_feature_map import get_feature_map
 
 
@@ -49,12 +51,28 @@ def _dataset(images, targets, idx, feature_dir):
     # 16x4
     bbox_ratios = torch.from_numpy(np.stack((dst_ratios, dst_ratios), axis=1).reshape(
         len(images.image_sizes), -1).astype(np.float32))
+    _images = F.interpolate(images.tensors, size=dst_img_size.tolist(), mode='bilinear', align_corners=False)
+    # reshape: [N, 3, W, H] to [N*3, W, H]
+    _shape = _images.shape
+    _images = torch.reshape(_images, [int(_shape[0] / 2), int(_shape[1]*2), _shape[2], _shape[3]])
+    _images = ImageList(_images, [dst_img_size.tolist()]*int(_shape[0] / 2))
+
     for i, target in enumerate(targets):
         target.bbox = target.bbox * bbox_ratios[i]
+        target.size = tuple(dst_img_size.tolist())
+        if 'masks' in target.extra_fields.keys():
+            del target.extra_fields['masks']
+        if 'keypoints' in target.extra_fields.keys():
+            del target.extra_fields['keypoints']
+    _targets = []
+    for i in range(int(_shape[0] / 2)):
+        _targets.append(cat_boxlist([targets[i*2], targets[i*2+1]]))
 
-    _images = F.interpolate(images.tensors, size=dst_img_size.tolist(), mode='bilinear', align_corners=False)
     feats = get_feature_map(idx, feature_dir=feature_dir)
-    return _images, targets, feats
+    _shape = feats.shape
+    feats = torch.reshape(feats, [int(_shape[0] / 2), int(_shape[1] * 2), _shape[2], _shape[3]])
+
+    return _images, _targets, feats
 
 
 def do_train(
@@ -89,8 +107,6 @@ def do_train(
         to_device_time = time.time()
         images = images.to(device)
         ##TODO:
-        import ipdb
-        ipdb.set_trace()
         feats = feats.to(device)
         targets = [target.to(device) for target in targets]
         to_device_time = time.time() - to_device_time

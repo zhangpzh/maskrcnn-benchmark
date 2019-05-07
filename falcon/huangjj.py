@@ -39,7 +39,6 @@ def load_pretrain_detector(cfg, model):
 
     #import ipdb
     #ipdb.set_trace()
-    
     if os.path.exists(save_file):
         f = get_model_file(save_file)
     if not f:
